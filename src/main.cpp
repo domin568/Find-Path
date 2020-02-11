@@ -12,6 +12,7 @@
 #include <random>
 #include <cmath>
 #include <sstream>
+#include <iomanip>
 
 #include "headers/graph.h"
 
@@ -21,93 +22,7 @@ SDL_Renderer *sdlRenderer;
 SDL_Window *window;
 const int width = 800;
 const int height = 600;
-const char * windowName = "Find Path (Mac OS)";
-
-void line (uint32_t * pixels, int x1, int y1, int x2, int y2, uint8_t R, uint8_t G, uint8_t B);
-
-void line (uint32_t * pixels, int x1, int y1, int x2, int y2, uint8_t R, uint8_t G, uint8_t B) 
-{
-    uint32_t color = 0xff000000 | (uint32_t) R << 16 | (uint32_t) G << 8 | (uint32_t) B;
-    std::cout << "color  = " << std::hex << color << std::endl;
-    pixels[y1 * width + x1] = color;
-    pixels[y2 * width + x2] = color;
-    
-     // zmienne pomocnicze
-     int d, dx, dy, ai, bi, xi, yi;
-     int x = x1, y = y1;
-     // ustalenie kierunku rysowania
-     if (x1 < x2)
-     {
-         xi = 1;
-         dx = x2 - x1;
-     }
-     else
-     {
-         xi = -1;
-         dx = x1 - x2;
-     }
-     // ustalenie kierunku rysowania
-     if (y1 < y2)
-     {
-         yi = 1;
-         dy = y2 - y1;
-     }
-     else
-     {
-         yi = -1;
-         dy = y1 - y2;
-     }
-     // pierwszy piksel
-     pixels[y * width + x] = color;
-     // oś wiodąca OX
-     if (dx > dy)
-     {
-         ai = (dy - dx) * 2;
-         bi = dy * 2;
-         d = bi - dx;
-         // pętla po kolejnych x
-         while (x != x2)
-         {
-             // test współczynnika
-             if (d >= 0)
-             {
-                 x += xi;
-                 y += yi;
-                 d += ai;
-             }
-             else
-             {
-                 d += bi;
-                 x += xi;
-             }
-             pixels[y * width + x] = color;
-         }
-     }
-     // oś wiodąca OY
-     else
-     {
-         ai = ( dx - dy ) * 2;
-         bi = dx * 2;
-         d = bi - dy;
-         // pętla po kolejnych y
-         while (y != y2)
-         {
-             // test współczynnika
-             if (d >= 0)
-             {
-                 x += xi;
-                 y += yi;
-                 d += ai;
-             }
-             else
-             {
-                 d += bi;
-                 y += yi;
-             }
-             pixels[y * width + x] = color;
-         }
-     }
-}
+const char * windowName = "Find Path";
 
 bool initializeSDL ()
 {
@@ -143,17 +58,6 @@ uint32_t randNum (uint32_t from, uint32_t to)
     return dist(rng);
 }
 
-SDL_Point * randomPoints (uint32_t nodes)
-{
-    SDL_Point * points = new SDL_Point[nodes];
-    for (int i = 0 ; i < nodes; i++)
-    {
-        points[i].x = randNum(0,width*2);
-        points[i].y = randNum(0,height*2);
-    }
-
-    return points;
-}
 double calcDistance (Vector2d point1, Vector2d point2)
 {
     return sqrt (pow(point1.x - point2.x,2) + pow (point1.y - point2.y,2));
@@ -185,13 +89,8 @@ void initializeNodes (Node * nodes)
         nodes[i].setPosition (positions[i]);
     }
 }
-void createGraph (Node * nodes, connection * c)
-{
-    Graph g (10,14,nodes,c);
-}
 void drawConnections (connection * c, int n, uint8_t R, uint8_t G, uint8_t B)
 {
-    //SDL_Point * points = new SDL_Point [n * 2];
     SDL_SetRenderDrawColor(sdlRenderer, R, G, B, SDL_ALPHA_OPAQUE);
     for (int i = 0 ; i < n ; i++)
     {
@@ -199,17 +98,10 @@ void drawConnections (connection * c, int n, uint8_t R, uint8_t G, uint8_t B)
         uint32_t y1 = c[i].s.getPosition().y;
         uint32_t x2 = c[i].t.getPosition().x;
         uint32_t y2 = c[i].t.getPosition().y;
-        /*
-        points[i*2].x = c[i].s.getPosition().x;
-        points[i*2].y = c[i].s.getPosition().y;
-        points[i*2 + 1].x = c[i + 1].t.getPosition().x;
-        points[i*2 + 1].y = c[i + 1].t.getPosition().y;
-        */
+
         SDL_RenderDrawLine(sdlRenderer, x1,y1,x2,y2);
         
     }
-
-    //delete [] points;
 }
 template <typename T>
 std::string to_string_with_precision(const T a_value, const int n = 6)
@@ -258,6 +150,16 @@ void drawIDs (Node * nodes, int n, uint8_t R, uint8_t G, uint8_t B, TTF_Font * f
         SDL_RenderCopy(sdlRenderer, message, NULL, &messageRect); //you put the renderer's name first, the Message, the crop size(you can ignore this if you don't want to dabble with cropping), and the rect which is the size and coordinate of your texture
     }
 }
+connection * createConnectionFromPath (std::vector <Node> nodes)
+{
+    connection * c = new connection [nodes.size()-1]; 
+    for (int i = 0; i < nodes.size()-1; i++)
+    {
+        c[i].s = nodes[i];
+        c[i].t = nodes[i+1];
+    }
+    return c;
+}
 void drawNodes (Node * nodes, int n, uint8_t R, uint8_t G, uint8_t B)
 {
     const int rectSize = 15;
@@ -271,14 +173,23 @@ void drawNodes (Node * nodes, int n, uint8_t R, uint8_t G, uint8_t B)
 
 int main (int argc, char ** argv) 
 {
+    
+    if (argc < 3)
+    {
+        std::cout << "[!] Usage: ./find_path <node ID> <node ID> " << std::endl;
+        return 1; 
+    }
+    
+    uint32_t nodeFrom = atoi (argv [1]); // that's enough for this application
+    uint32_t nodeTo = atoi (argv [2]);
+    
     if (initializeSDL())
     {
-        return -1;
+        return 2;
     }
 
     Node * nodes = new Node [10];
     initializeNodes (nodes);
-
 
     connection c [] = 
     {
@@ -298,20 +209,37 @@ int main (int argc, char ** argv)
         {nodes[6],nodes[8]}
     };
     calcDistances (c,14);
-    createGraph (nodes,c);
+    Graph g (10,14,nodes,c);
+    
+    std::vector <Node> p = g.path (nodes[nodeFrom],nodes[nodeTo],nodes);
+
+    connection * shortestConnections = createConnectionFromPath (p);
+    uint32_t szShortestConnections = p.size()-1;
+
+    double pathDistance = 0;
+    calcDistances (shortestConnections,szShortestConnections);
+    for (int i = 0 ; i < szShortestConnections; i++)
+    {
+         pathDistance += shortestConnections[i].distance;
+    }
+
+    std::cout << "[*] Distance of path : " << std::setprecision(4) << pathDistance << std::endl;
 
     SDL_Event event;
     bool done = false;
-
     TTF_Font* sans = TTF_OpenFont("Sans.ttf", 12); //this opens a font style and sets a size
 
     while(!done) 
     {
         drawConnections (c,14,255,0,0);
+        drawConnections (shortestConnections,szShortestConnections,0,255,255);
         drawNodes (nodes,10,0,255,0);
         drawIDs(nodes,10,255,255,255,sans);
         drawDistances(c,14,255,255,0,sans);
+
+
         SDL_RenderPresent(sdlRenderer);
+
         while(SDL_PollEvent(&event)) 
         {
             switch (event.type)
@@ -322,7 +250,6 @@ int main (int argc, char ** argv)
                     done = true;
                     break;
                 }
-                
                 case SDL_KEYDOWN:
                 {
                     if (event.key.keysym.sym == SDLK_ESCAPE)
@@ -331,15 +258,12 @@ int main (int argc, char ** argv)
                     }
                     if (event.key.keysym.sym == SDLK_l)
                     {
-                        //line (pixels,rand()%width, rand()%height, rand()%width, rand()%height, 100+rand()%155, 100+rand()%155, 100+rand()%155);
+
                     }
                 }
             }
-        }
-        //SDL_RenderClear(sdlRenderer);
-        //SDL_RenderCopy(sdlRenderer, texture, NULL, NULL);
-        
+        }  
     }
-
+    delete [] shortestConnections;
     return 0;
 }

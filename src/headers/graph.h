@@ -5,19 +5,11 @@
 #include <iostream>
 #include "node.h"
 
-struct vertex
-{
-	int val;
-	std::vector <uint32_t> connections; 
-	bool visited = 0; 
-};
-
 class Graph
 {
 	private:
-		int** adjMatrix;
+		double** adjMatrix;
 		int n;
-		vertex * vv;
 		
 	public:
 		Graph(int n, int m, Node * nodes, connection c[]);
@@ -28,8 +20,9 @@ class Graph
 		bool check(int u, int v);  //sprawdza czy istnieje krawędź
 		void bfs (int s);
 		void dfs(int s);
-		int find (std::vector <int> Q, double * d);
-		int * ownDijkstra (int s);
+		Node find (std::vector <Node> & Q, double * d);
+		Node* ownDijkstra (Node startNode, Node * nodes);
+		std::vector <Node> path (Node s, Node t, Node * nodes);
 		friend std::ostream& operator<<(std::ostream& out, Graph& g);
 		~Graph();
 };

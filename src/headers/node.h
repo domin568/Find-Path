@@ -15,7 +15,7 @@ double calcDistance (Vector2d point1, Vector2d point2);
 class Node 
 {
 	private:
-		uint32_t id;
+		uint32_t id = -1;
 		Vector2d position;
 		bool visited = 0;
 		std::vector <Node> connections; 
