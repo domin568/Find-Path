@@ -1,15 +1,14 @@
+#ifndef GRAPH_H
+#define GRAPH_H
+
 #include <vector>
 #include <iostream>
+#include "node.h"
 
-struct edge
-{
-	int s;
-	int t;
-};
 struct vertex
 {
 	int val;
-	std::vector <unsigned int> polaczenia; 
+	std::vector <uint32_t> connections; 
 	bool visited = 0; 
 };
 
@@ -17,12 +16,11 @@ class Graph
 {
 	private:
 		int** adjMatrix;
-		int n;				//liczba wierzcholkow
+		int n;
 		vertex * vv;
 		
 	public:
-		// m = liczba polaczen
-		Graph(int n, int m, edge edges[], bool directed = false);
+		Graph(int n, int m, Node * nodes, connection c[]);
 		int edgeCnt(); 
 		int nodeCnt(); 
 		void insertEdge(int u, int v);
@@ -30,6 +28,10 @@ class Graph
 		bool check(int u, int v);  //sprawdza czy istnieje krawędź
 		void bfs (int s);
 		void dfs(int s);
+		int find (std::vector <int> Q, double * d);
+		int * ownDijkstra (int s);
 		friend std::ostream& operator<<(std::ostream& out, Graph& g);
 		~Graph();
 };
+
+#endif

@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -std=c++17 `sdl2-config --cflags` -Isrc/headers
-LDFLAGS = `sdl2-config --static-libs`
+LDFLAGS = `sdl2-config --static-libs` -lSDL2_ttf
 
 SRCDIR = src
 OBJDIR = obj
@@ -24,6 +24,9 @@ analyze:
 
 debug: CXXFLAGS += -ggdb
 debug: find_path
+
+pre: CXXFLAGS += -E
+pre: find_path
 
 .PHONY: clean
 clean:
